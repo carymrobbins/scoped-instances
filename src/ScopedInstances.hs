@@ -14,6 +14,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 module ScopedInstances where
 
+import Data.Coerce
 import Data.Kind (Constraint)
 import Data.Text (Text)
 import GHC.Generics
@@ -69,6 +70,68 @@ instance (Encode (a p), Encode (b p)) => Encode ((a :*: b) p) where
 
 instance (Generic a, Encode (Rep a p)) => Encode (GenericEncode a) where
   encode = (encode @(Rep a p)) . from . unGenericEncode
+
+-- TODO: Copy pasta to support Using/As stuff. Can probably be better
+-- generalized, maybe with a type-level list?
+-- Something like -
+-- {{{
+--    GenericEncode Rec `Using` '[ Encode (Text `As` Uptext) ]
+-- }}}
+-- Then we can just define the vanilla GenericEncode instance in terms of
+-- {{{
+--    GenericEncode Rec `Using` '[]
+-- }}}
+
+instance (Encode (f p `Using` Encode (a `As` b)))
+  => Encode (M1 D x f p `Using` Encode (a `As` b))
+  where
+  encode (Using (M1 x)) = encode @(f p `Using` Encode (a `As` b)) (Using x)
+
+instance (Encode (f p `Using` Encode (a `As` b)))
+  => Encode (M1 C x f p `Using` Encode (a `As` b))
+  where
+  encode (Using (M1 x)) = encode @(f p `Using` Encode (a `As` b)) (Using x)
+
+instance
+  ( Encode (t `Using` Encode (a `As` b))
+  , Selector s
+  ) => Encode (M1 S s (K1 R t) p `Using` Encode (a `As` b))
+  where
+  encode (Using m@(M1 (K1 x))) =
+    Text.pack (selName m)
+      <> " = " <>
+      encode @(t `Using` Encode (a `As` b)) (Using x)
+
+instance {-# OVERLAPPING #-}
+  ( Encode b
+  , Coercible a b
+  ) => Encode (a `Using` Encode (a `As` b))
+  where
+  encode (Using a) = encode @b (coerce a)
+
+instance {-# OVERLAPPABLE #-}
+  (Encode c) => Encode (c `Using` Encode (a `As` b))
+  where
+  encode (Using c) = encode @c c
+
+instance
+  ( Encode (a p `Using` Encode (c `As` d))
+  , Encode (b p `Using` Encode (c `As` d))
+  ) => Encode ((a :*: b) p `Using` Encode (c `As` d)) where
+  encode (Using (a :*: b)) =
+    (encode @(a p `Using` Encode (c `As` d)) (Using a))
+      <> ", " <>
+      (encode @(b p `Using` Encode (c `As` d)) (Using b))
+
+instance
+  ( Generic a
+  , Encode (Rep a p `Using` Encode (c `As` d))
+  ) => Encode (GenericEncode a `Using` Encode (c `As` d)) where
+  encode (Using x) =
+    (encode @(Rep a p `Using` Encode (c `As` d)))
+      $ Using @(Rep a p) @(Encode (c `As` d))
+      $ from @a
+      $ unGenericEncode x
 
 newtype a `Using` (x :: Constraint) = Using a
   deriving stock (Show)

@@ -3,6 +3,7 @@
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeOperators #-}
 
 import Data.Text (Text)
 import qualified Data.Text as Text
@@ -44,5 +45,5 @@ data Rec2 = Rec2
   , bar :: Text
   , baz :: Text
   } deriving stock (Show, Eq, Generic)
-             -- TODO: via GenericEncode Rec2 `Using` Encode (Text `As` Uptext)
-    deriving (Encode) via GenericEncode Rec2
+    deriving (Encode)
+      via GenericEncode Rec2 `Using` Encode (Text `As` Uptext)
