@@ -1,0 +1,32 @@
+name:                scoped-instances
+version:             0.0.0.0
+github:              "carymrobbins/scoped-instances"
+license:             BSD3
+author:              "Cary Robbins"
+maintainer:          "carymrobbins@gmail.com"
+copyright:           "2019 Cary Robbins"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+description:         Please see the README on GitHub at <https://github.com/carymrobbins/scoped-instances#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- text
+
+library:
+  source-dirs: src
+
+tests:
+  scoped-instances-test:
+    main:                Test.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - scoped-instances
+    - hspec
